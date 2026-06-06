@@ -1,4 +1,4 @@
-export const MAPBOX_TOKEN = '';
+export { MAPBOX_TOKEN } from '../env.js';
 export const HUNGARY_CENTER = [19.5033, 47.1624];
 export const HUNGARY_ZOOM   = 6.4;
 export const BASE_STYLE     = 'mapbox://styles/mapbox/dark-v11';
