@@ -1,10 +1,15 @@
-# Project Lary — Hungary Air Quality WebGIS
+# Project Lary — Hungary Air Quality & Land Cover WebGIS
 
-An interactive WebGIS application for exploring NO₂, PM10, and PM2.5 atmospheric pollution across Hungary (2021–2023), with land cover analysis and population exposure assessment.
+An interactive WebGIS application for exploring NO₂, PM10, and PM2.5 atmospheric pollution across Hungary (2021–2023), cross-referenced with CORINE land cover change data for Trees, Built Area, and Crops.
 
 **Study area:** Hungary · 93,030 km² · 45.7°N–48.6°N, 16.1°E–22.9°E  
-**Time period:** 2021–2023  
-**Key finding:** NO₂ reduced by −2.3 µg/m³ overall; urban areas −3.1 µg/m³
+**Time period:** 2021–2023
+
+| Cover Type | Paired Pollutant | Stability | Mean zone change |
+|---|---|---|---|
+| Trees | PM10 | 96.13% stable | Gain zones: −451K |
+| Built Area | NO₂ | 96.00% stable | Stable zones: −2.20 µg/m³ |
+| Crops | PM2.5 | 97.58% stable | Gain zones: −317M |
 
 ---
 
@@ -16,6 +21,7 @@ An interactive WebGIS application for exploring NO₂, PM10, and PM2.5 atmospher
 - Floating pie chart panel showing pollutant distribution by administrative zone
 - Dynamic legend that adapts per layer type
 - Four basemap options: Dark (default), Streets, Satellite, OSM
+- Results dashboard with transition charts (gain sources / loss destinations) and pollutant zonal statistics per cover type
 - No backend required — fully client-side, static file serving
 
 ---
@@ -38,13 +44,28 @@ Project-Lary/
 │   ├── layer-manager.js # Layer lifecycle: load, show, hide
 │   ├── sidebar.js       # Sidebar UI builder (group tabs + radio buttons)
 │   ├── tiff-loader.js   # GeoTIFF decode → canvas → Mapbox raster source
-│   ├── legend.js        # Dynamic legend (gradient or colour swatches)
+│   ├── legend.js        # Dynamic legend (gradient bar or colour swatches)
 │   └── pie-panel.js     # Floating Chart.js pie panel
 └── Data/
-    ├── no2/             # NO₂ GeoTIFF & GeoJSON files (2021, 2023, change)
-    ├── pm10/            # PM10 equivalent files
-    └── pm2p5/           # PM2.5 equivalent files
+    ├── LLC&zone.csv     # LCC transition stats + pollutant zonal data (all 3 cover types)
+    ├── no2/             # NO₂ GeoTIFF rasters, GeoJSON, Bar_chart.csv
+    ├── pm10/            # PM10 GeoTIFF rasters & GeoJSON
+    └── pm2p5/           # PM2.5 GeoTIFF rasters & GeoJSON
 ```
+
+---
+
+## LCC × Pollutant Pairing
+
+`Data/LLC&zone.csv` contains three sections, each coupling a land cover type with its corresponding pollutant's zonal statistics:
+
+| Section | Cover Type | Pollutant | Zone labels |
+|---|---|---|---|
+| 1 | Trees | PM10 | Loss · Gain · Stable |
+| 2 | Built Area | NO₂ | Stable · Gain · Loss |
+| 3 | Crops | PM2.5 | Gain · Loss · Stable |
+
+Each section records: stability %, top-3 gain sources, top-3 loss destinations, and pollutant Mean/Min/Max per zone.
 
 ---
 
@@ -106,8 +127,9 @@ flowchart TD
         end
 
         subgraph Data["Data — static files"]
-            TIFF["GeoTIFF rasters\n*.tif — 9–64 KB each\n3 pollutants × 3 years + change"]
+            TIFF["GeoTIFF rasters\n*.tif — 9–64 KB each\n3 pollutants × 3 maps (avg 2021, avg 2023, change)"]
             GJ["GeoJSON vectors\npopulation_chart.geojson ~756 KB\nbivariate_color.geojson ~2.3 MB"]
+            CSV["LLC&zone.csv\nLCC transitions + pollutant\nzonal stats per cover type"]
         end
 
         subgraph CDN["CDN dependencies"]
@@ -138,6 +160,7 @@ flowchart TD
     CH & BV --> MB
     TIFF --> TL
     GJ --> GF
+    CSV -->|parsed inline| R
 ```
 
 ---
@@ -147,10 +170,11 @@ flowchart TD
 | Dataset | Source | Format |
 |---|---|---|
 | NO₂ concentration maps | CAMS (Copernicus Atmosphere Monitoring Service) | GeoTIFF |
-| PM10 & PM2.5 concentration maps | CAMS | GeoTIFF |
+| PM10 concentration maps | CAMS | GeoTIFF |
+| PM2.5 concentration maps | CAMS | GeoTIFF |
+| Land cover change (Trees, Built Area, Crops) | CORINE Land Cover | CSV (zonal stats) |
 | Administrative boundaries | EuroGeographics | GeoJSON |
-| Land cover | CORINE Land Cover | (analysis input) |
-| Population grid | Derived from admin zones | GeoJSON |
+| Population exposure grid | Derived from admin zones | GeoJSON |
 | Background tiles | OpenStreetMap / Mapbox | Vector tiles |
 
 ---
@@ -161,7 +185,7 @@ Each pollutant group contains five layers:
 
 | # | Layer | Type | Notes |
 |---|---|---|---|
-| 1 | Avg concentration 2021 | GeoTIFF | Default layer on load |
+| 1 | Avg concentration 2021 | GeoTIFF | Default layer on load (NO₂ group) |
 | 2 | Avg concentration 2023 | GeoTIFF | |
 | 3 | Change 2021 → 2023 | GeoTIFF | Negative = improvement |
 | 4 | Population exposure | GeoJSON choropleth | Pie chart enabled |
@@ -184,9 +208,9 @@ Groups: **NO₂** · **PM10** · **PM2.5** — 15 layers total.
    # or
    python -m http.server 8080
    ```
-4. Open `http://localhost:8080/webgis.html`
+4. Open `http://localhost:8080/home.html`
 
-> **Note:** Opening `webgis.html` directly as a `file://` URL will fail due to ES module and fetch CORS restrictions.
+> **Note:** Opening HTML files directly as `file://` URLs will fail due to ES module and fetch CORS restrictions.
 
 ---
 
@@ -198,5 +222,5 @@ All loaded from CDN — no `npm install` required.
 |---|---|---|
 | [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) | 2.15.0 | Map engine (vector tiles + raster layers) |
 | [geotiff.js](https://geotiffjs.github.io/) | 2.1.3 | GeoTIFF decode in the browser |
-| [Chart.js](https://www.chartjs.org/) | 4.4.3 | Pie charts & bar charts |
+| [Chart.js](https://www.chartjs.org/) | 4.4.3 | Bar charts, pie charts, zonal stat visualisations |
 | [Bootstrap](https://getbootstrap.com/) | 5.3.3 | Responsive UI layout |
