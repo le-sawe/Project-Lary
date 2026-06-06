@@ -22,5 +22,4 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Local environment — contains API tokens, never commit
-env.js
+# env.js is committed — token is a public Mapbox pk.* token, restricted by URL in Mapbox dashboard
