@@ -6,6 +6,17 @@
   <title>Project Lary - Results</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .stat-badge { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .section-label { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; }
+    .pollutant-tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; }
+    .chart-wrap { position: relative; height: 300px; }
+    .progress { height: 8px; border-radius: 4px; }
+    .cover-section { border-left: 3px solid; padding-left: 1rem; }
+    .cover-trees   { border-color: #198754; }
+    .cover-built   { border-color: #fd7e14; }
+    .cover-crops   { border-color: #0dcaf0; }
+  </style>
 </head>
 <body>
   <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
@@ -25,131 +36,59 @@
   </nav>
 
   <main class="container py-5">
-    <h1 class="h3 mb-4">Analysis Results</h1>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="h5 card-title mb-3">Key Findings</h2>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <div class="card bg-body-secondary text-center h-100">
-              <div class="card-body">
-                <h6 class="card-title">Overall NO₂ Reduction</h6>
-                <p class="display-6 fw-bold text-info my-2">-2.3 µg/m³</p>
-                <p class="small text-secondary mb-0">Average decrease across Hungary (2021–2023)</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-body-secondary text-center h-100">
-              <div class="card-body">
-                <h6 class="card-title">Urban Areas</h6>
-                <p class="display-6 fw-bold text-info my-2">-3.1 µg/m³</p>
-                <p class="small text-secondary mb-0">Highest reduction in built-up zones</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-body-secondary text-center h-100">
-              <div class="card-body">
-                <h6 class="card-title">Agricultural Regions</h6>
-                <p class="display-6 fw-bold text-info my-2">-1.8 µg/m³</p>
-                <p class="small text-secondary mb-0">Moderate improvement in farmland areas</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="mb-5">
+      <p class="section-label mb-1">Land Cover Change &amp; Air Quality Analysis</p>
+      <h1 class="h2 fw-bold mb-2">Analysis Results</h1>
+      <p class="text-secondary mb-0">Land cover change detection for Trees, Built Area, and Crops — each paired with its corresponding air quality indicator (PM10, NO₂, PM2.5).</p>
     </div>
 
-    <div class="card mb-4">
+    <!-- STABILITY SUMMARY -->
+    <div class="card mb-5">
       <div class="card-body">
-        <h2 class="h5 card-title mb-3">NO₂ Change by Land Cover Type</h2>
-        <div style="height: 380px;">
-          <canvas id="zonalChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="h5 card-title mb-3">Land Cover Change Detection</h2>
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Area (km²)</th>
-              <th>Change 2021–2023</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Stable Forest</td>
-              <td>1,840</td>
-              <td class="text-success">+2.1%</td>
-              <td>No significant change in forest cover</td>
-            </tr>
-            <tr>
-              <td>Forest Gain</td>
-              <td>85</td>
-              <td class="text-success">New</td>
-              <td>Conversion to forest/vegetation</td>
-            </tr>
-            <tr>
-              <td>Agriculture Stable</td>
-              <td>54,200</td>
-              <td class="text-secondary">0.3%</td>
-              <td>Cropland and pastures maintained</td>
-            </tr>
-            <tr>
-              <td>Urban Expansion</td>
-              <td>320</td>
-              <td class="text-danger">+4.8%</td>
-              <td>Built-up area increase</td>
-            </tr>
-            <tr>
-              <td>Water Bodies</td>
-              <td>1,450</td>
-              <td class="text-primary">-0.5%</td>
-              <td>Minor fluctuation in water extent</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="h5 card-title mb-3">Spatial Patterns</h2>
+        <p class="section-label mb-3">Overall Land Cover Stability (2021–2023)</p>
         <div class="row g-3">
           <div class="col-md-4">
             <div class="card bg-body-secondary h-100">
               <div class="card-body">
-                <h6 class="card-title">Budapest Metropolitan Area</h6>
-                <p class="mb-1"><strong>NO₂ Change:</strong> -3.5 µg/m³</p>
-                <p class="mb-2"><strong>Land Cover:</strong> Stable urban, minor expansion</p>
-                <p class="small text-secondary mb-0">Significant air quality improvement despite urban growth, likely due to emission regulations and traffic management.</p>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="fw-semibold text-success">Trees</span>
+                  <span class="pollutant-tag text-success">PM10</span>
+                </div>
+                <div class="stat-badge text-success mb-1">96.13%</div>
+                <div class="text-secondary small mb-3">3.87% converted to other cover types</div>
+                <div class="progress bg-body-tertiary">
+                  <div class="progress-bar bg-success" style="width:96.13%"></div>
+                </div>
               </div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="card bg-body-secondary h-100">
               <div class="card-body">
-                <h6 class="card-title">Great Hungarian Plain</h6>
-                <p class="mb-1"><strong>NO₂ Change:</strong> -1.6 µg/m³</p>
-                <p class="mb-2"><strong>Land Cover:</strong> Stable agriculture</p>
-                <p class="small text-secondary mb-0">Agricultural regions show moderate NO₂ reduction, correlated with seasonal patterns and farming practices.</p>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="fw-semibold text-warning">Built Area</span>
+                  <span class="pollutant-tag text-warning">NO₂</span>
+                </div>
+                <div class="stat-badge text-warning mb-1">96.00%</div>
+                <div class="text-secondary small mb-3">4.00% converted to other cover types</div>
+                <div class="progress bg-body-tertiary">
+                  <div class="progress-bar bg-warning" style="width:96.00%"></div>
+                </div>
               </div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="card bg-body-secondary h-100">
               <div class="card-body">
-                <h6 class="card-title">Northern Highlands</h6>
-                <p class="mb-1"><strong>NO₂ Change:</strong> -1.2 µg/m³</p>
-                <p class="mb-2"><strong>Land Cover:</strong> Forest gain (+2.1%)</p>
-                <p class="small text-secondary mb-0">Low baseline NO₂ levels with slight improvement. Increased forest cover contributes to air quality.</p>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="fw-semibold text-info">Crops</span>
+                  <span class="pollutant-tag text-info">PM2.5</span>
+                </div>
+                <div class="stat-badge text-info mb-1">97.58%</div>
+                <div class="text-secondary small mb-3">2.42% converted to other cover types</div>
+                <div class="progress bg-body-tertiary">
+                  <div class="progress-bar bg-info" style="width:97.58%"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -157,16 +96,165 @@
       </div>
     </div>
 
+    <!-- ===== SECTION 1: TREES / PM10 ===== -->
+    <div class="cover-section cover-trees mb-5">
+      <p class="section-label mb-0">Section 1</p>
+      <h2 class="h5 fw-bold mb-1">Trees <span class="text-success small">— PM10</span></h2>
+      <p class="text-secondary small mb-4">Land cover transitions for tree cover, with PM10 zonal change statistics by zone type.</p>
+      <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <p class="section-label mb-1">Transitions</p>
+              <h3 class="h6 card-title mb-3">Gain Sources &amp; Loss Destinations</h3>
+              <div class="chart-wrap">
+                <canvas id="treesTransChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <p class="section-label mb-1">PM10 Zonal Statistics</p>
+              <h3 class="h6 card-title mb-3">PM10 Change by Zone Type (×10³ units)</h3>
+              <div class="chart-wrap">
+                <canvas id="pm10Chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-0">
+        <div class="card-body">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-secondary">
+              <tr><th>Indicator</th><th class="text-end">Value (%)</th><th>Counterpart</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Primary Gain Source</td><td class="text-end">61.18%</td><td class="text-secondary">Crops</td></tr>
+              <tr><td>Secondary Gain Source</td><td class="text-end">33.41%</td><td class="text-secondary">Rangeland</td></tr>
+              <tr><td>Third Gain Source</td><td class="text-end">3.41%</td><td class="text-secondary">Built Area</td></tr>
+              <tr><td>Primary Loss Destination</td><td class="text-end">60.84%</td><td class="text-secondary">Crops</td></tr>
+              <tr><td>Secondary Loss Destination</td><td class="text-end">29.79%</td><td class="text-secondary">Rangeland</td></tr>
+              <tr><td>Third Loss Destination</td><td class="text-end">6.37%</td><td class="text-secondary">Built Area</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 2: BUILT AREA / NO2 ===== -->
+    <div class="cover-section cover-built mb-5">
+      <p class="section-label mb-0">Section 2</p>
+      <h2 class="h5 fw-bold mb-1">Built Area <span class="text-warning small">— NO₂</span></h2>
+      <p class="text-secondary small mb-4">Land cover transitions for built-up area, with NO₂ zonal change statistics by zone type.</p>
+      <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <p class="section-label mb-1">Transitions</p>
+              <h3 class="h6 card-title mb-3">Gain Sources &amp; Loss Destinations</h3>
+              <div class="chart-wrap">
+                <canvas id="builtTransChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <p class="section-label mb-1">NO₂ Zonal Statistics</p>
+              <h3 class="h6 card-title mb-3">NO₂ Change by Zone Type (µg/m³)</h3>
+              <div class="chart-wrap">
+                <canvas id="no2Chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-0">
+        <div class="card-body">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-secondary">
+              <tr><th>Indicator</th><th class="text-end">Value (%)</th><th>Counterpart</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Primary Gain Source</td><td class="text-end">69.38%</td><td class="text-secondary">Crops</td></tr>
+              <tr><td>Secondary Gain Source</td><td class="text-end">15.09%</td><td class="text-secondary">Rangeland</td></tr>
+              <tr><td>Third Gain Source</td><td class="text-end">15.09%</td><td class="text-secondary">Trees</td></tr>
+              <tr><td>Primary Loss Destination</td><td class="text-end">65.65%</td><td class="text-secondary">Crops</td></tr>
+              <tr><td>Second Loss Destination</td><td class="text-end">20.77%</td><td class="text-secondary">Trees</td></tr>
+              <tr><td>Third Loss Destination</td><td class="text-end">10.99%</td><td class="text-secondary">Rangeland</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 3: CROPS / PM2.5 ===== -->
+    <div class="cover-section cover-crops mb-5">
+      <p class="section-label mb-0">Section 3</p>
+      <h2 class="h5 fw-bold mb-1">Crops <span class="text-info small">— PM2.5</span></h2>
+      <p class="text-secondary small mb-4">Land cover transitions for cropland, with PM2.5 zonal change statistics by zone type.</p>
+      <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <p class="section-label mb-1">Transitions</p>
+              <h3 class="h6 card-title mb-3">Gain Sources &amp; Loss Destinations</h3>
+              <div class="chart-wrap">
+                <canvas id="cropsTransChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <p class="section-label mb-1">PM2.5 Zonal Statistics</p>
+              <h3 class="h6 card-title mb-3">PM2.5 Change by Zone Type (×10⁶ units)</h3>
+              <div class="chart-wrap">
+                <canvas id="pm25Chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-0">
+        <div class="card-body">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-secondary">
+              <tr><th>Indicator</th><th class="text-end">Value (%)</th><th>Counterpart</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Primary Gain Source</td><td class="text-end">45.96%</td><td class="text-secondary">Rangeland</td></tr>
+              <tr><td>Secondary Gain Source</td><td class="text-end">36.82%</td><td class="text-secondary">Trees</td></tr>
+              <tr><td>Tertiary Gain Source</td><td class="text-end">14.93%</td><td class="text-secondary">Built Area</td></tr>
+              <tr><td>Primary Loss Destination</td><td class="text-end">46.34%</td><td class="text-secondary">Trees</td></tr>
+              <tr><td>Secondary Loss Destination</td><td class="text-end">39.57%</td><td class="text-secondary">Rangeland</td></tr>
+              <tr><td>Tertiary Loss Destination</td><td class="text-end">12.57%</td><td class="text-secondary">Built Area</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCLUSIONS -->
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="h5 card-title mb-3">Conclusions</h2>
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item bg-transparent">✓ Overall air quality improvement: NO₂ concentrations decreased by an average of 2.3 µg/m³ across Hungary between 2021 and 2023</li>
-          <li class="list-group-item bg-transparent">✓ Urban areas show the most significant reduction (-3.1 µg/m³), indicating effectiveness of emission control policies</li>
-          <li class="list-group-item bg-transparent">✓ Land cover remained relatively stable, with minor forest gain (85 km²) and urban expansion (320 km²)</li>
-          <li class="list-group-item bg-transparent">✓ Strong spatial correlation between land use type and NO₂ change patterns</li>
-          <li class="list-group-item bg-transparent">✓ Agricultural zones exhibit seasonal variability in NO₂ levels linked to farming activities</li>
-        </ul>
+        <p class="section-label mb-3">Summary</p>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="d-flex gap-2 mb-2"><span class="text-success">✓</span><span><strong class="text-success">Trees / PM10:</strong> 96.13% stable. Gains and losses mainly exchange with Crops (~61%) and Rangeland (~33%). PM10 decreases across all zones — Loss zones show the least reduction (−353K), Gain zones the most (−451K).</span></div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex gap-2 mb-2"><span class="text-warning">✓</span><span><strong class="text-warning">Built Area / NO₂:</strong> 96.00% stable. Expansion drew ~69% from Crops. NO₂ decreased uniformly (Stable −2.20, Gain −2.44, Loss −2.44 µg/m³); Loss zones show widest spread (−6.25 to +0.12).</span></div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex gap-2 mb-2"><span class="text-info">✓</span><span><strong class="text-info">Crops / PM2.5:</strong> 97.58% stable — the most stable cover type. Gain drawn primarily from Rangeland (46%) and Trees (37%). PM2.5 declined across all zones; Stable zones show the smallest mean decrease.</span></div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -177,53 +265,169 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    fetch('Data/no2/zonal_CSV.csv')
-      .then(r => r.text())
-      .then(csv => {
-        const lines = csv.trim().split('\n');
-        const labels = [], means = [], mins = [], maxs = [];
-        lines.forEach(line => {
-          const p = line.split(',').map(s => s.trim());
-          if (p.length >= 11 && ['Stable','Gain','Loss'].includes(p[7])) {
-            labels.push(p[7]);
-            means.push(parseFloat(p[8]));
-            mins.push(parseFloat(p[9]));
-            maxs.push(parseFloat(p[10]));
-          }
-        });
-        renderChart(labels, means, mins, maxs);
-      })
-      .catch(() => renderChart(
-        ['Stable', 'Gain', 'Loss'],
-        [-2.20, -2.44, -2.44],
-        [-3.1, -3.4, -3.4],
-        [-1.3, -1.5, -1.5]
-      ));
+    const gridColor = 'rgba(255,255,255,0.06)';
+    const tickColor = '#adb5bd';
 
-    function renderChart(labels, means, mins, maxs) {
-      new Chart(document.getElementById('zonalChart'), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Min', data: mins, backgroundColor: 'rgba(220,53,69,0.7)', borderColor: '#dc3545', borderWidth: 1 },
-            { label: 'Mean', data: means, backgroundColor: 'rgba(13,110,253,0.7)', borderColor: '#0d6efd', borderWidth: 1 },
-            { label: 'Max', data: maxs, backgroundColor: 'rgba(25,135,84,0.7)', borderColor: '#198754', borderWidth: 1 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: 'NO₂ Concentration Change by Land Cover Zone (µg/m³)' }
+    const baseScales = {
+      x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+      y: { ticks: { color: tickColor }, grid: { color: gridColor } }
+    };
+
+    // ---- TREES: transition chart (grouped bar — gain sources vs loss destinations) ----
+    new Chart(document.getElementById('treesTransChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Crops', 'Rangeland', 'Built Area'],
+        datasets: [
+          {
+            label: 'Source of Gain (%)',
+            data: [61.18, 33.41, 3.41],
+            backgroundColor: 'rgba(25,135,84,0.75)', borderColor: '#198754', borderWidth: 1, borderRadius: 3
           },
-          scales: {
-            y: { title: { display: true, text: 'NO₂ Change (µg/m³)' } }
+          {
+            label: 'Loss Destination (%)',
+            data: [60.84, 29.79, 6.37],
+            backgroundColor: 'rgba(25,135,84,0.3)', borderColor: '#198754', borderWidth: 1, borderRadius: 3,
+            borderDash: [4,2]
           }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, title: { display: true, text: '%', color: tickColor }, max: 80,
+               ticks: { color: tickColor, callback: v => v + '%' } }
         }
-      });
-    }
+      }
+    });
+
+    // ---- TREES: PM10 zonal chart ----
+    // Zone_mean/min/max divided by 1000 for readability
+    new Chart(document.getElementById('pm10Chart'), {
+      type: 'bar',
+      data: {
+        labels: ['Loss', 'Gain', 'Stable'],
+        datasets: [
+          { label: 'Min',  data: [-494.931, -811.368, -814.867], backgroundColor: 'rgba(220,53,69,0.7)',   borderColor: '#dc3545', borderWidth: 1, borderRadius: 3 },
+          { label: 'Mean', data: [-353.357, -451.059, -427.907], backgroundColor: 'rgba(13,110,253,0.7)',  borderColor: '#0d6efd', borderWidth: 1, borderRadius: 3 },
+          { label: 'Max',  data: [-169.167, -270.706, -147.222], backgroundColor: 'rgba(25,135,84,0.7)',   borderColor: '#198754', borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, title: { display: true, text: 'PM10 Change (×10³)', color: tickColor },
+               ticks: { color: tickColor } }
+        }
+      }
+    });
+
+    // ---- BUILT AREA: transition chart ----
+    new Chart(document.getElementById('builtTransChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Crops', 'Rangeland', 'Trees'],
+        datasets: [
+          {
+            label: 'Source of Gain (%)',
+            data: [69.38, 15.09, 15.09],
+            backgroundColor: 'rgba(253,126,20,0.75)', borderColor: '#fd7e14', borderWidth: 1, borderRadius: 3
+          },
+          {
+            label: 'Loss Destination (%)',
+            data: [65.65, 10.99, 20.77],
+            backgroundColor: 'rgba(253,126,20,0.3)', borderColor: '#fd7e14', borderWidth: 1, borderRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, title: { display: true, text: '%', color: tickColor }, max: 80,
+               ticks: { color: tickColor, callback: v => v + '%' } }
+        }
+      }
+    });
+
+    // ---- BUILT AREA: NO2 zonal chart ----
+    new Chart(document.getElementById('no2Chart'), {
+      type: 'bar',
+      data: {
+        labels: ['Stable', 'Gain', 'Loss'],
+        datasets: [
+          { label: 'Min',  data: [-2.578, -5.102, -6.246], backgroundColor: 'rgba(220,53,69,0.7)',  borderColor: '#dc3545', borderWidth: 1, borderRadius: 3 },
+          { label: 'Mean', data: [-2.202, -2.436, -2.436], backgroundColor: 'rgba(13,110,253,0.7)', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 3 },
+          { label: 'Max',  data: [-1.739, -1.230,  0.116], backgroundColor: 'rgba(25,135,84,0.7)',  borderColor: '#198754', borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, title: { display: true, text: 'NO₂ Change (µg/m³)', color: tickColor },
+               ticks: { color: tickColor } }
+        }
+      }
+    });
+
+    // ---- CROPS: transition chart ----
+    new Chart(document.getElementById('cropsTransChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Rangeland', 'Trees', 'Built Area'],
+        datasets: [
+          {
+            label: 'Source of Gain (%)',
+            data: [45.96, 36.82, 14.93],
+            backgroundColor: 'rgba(13,202,240,0.75)', borderColor: '#0dcaf0', borderWidth: 1, borderRadius: 3
+          },
+          {
+            label: 'Loss Destination (%)',
+            data: [39.57, 46.34, 12.57],
+            backgroundColor: 'rgba(13,202,240,0.3)', borderColor: '#0dcaf0', borderWidth: 1, borderRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, title: { display: true, text: '%', color: tickColor }, max: 60,
+               ticks: { color: tickColor, callback: v => v + '%' } }
+        }
+      }
+    });
+
+    // ---- CROPS: PM2.5 zonal chart ----
+    // Values divided by 1,000,000 for readability
+    new Chart(document.getElementById('pm25Chart'), {
+      type: 'bar',
+      data: {
+        labels: ['Gain', 'Loss', 'Stable'],
+        datasets: [
+          { label: 'Min',  data: [-4.357, -47.782, -60.411],    backgroundColor: 'rgba(220,53,69,0.7)',  borderColor: '#dc3545', borderWidth: 1, borderRadius: 3 },
+          { label: 'Mean', data: [-317.001, -277.211, -263.314], backgroundColor: 'rgba(13,110,253,0.7)', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 3 },
+          { label: 'Max',  data: [-19.168, -12.022, 381.224],   backgroundColor: 'rgba(25,135,84,0.7)',  borderColor: '#198754', borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, title: { display: true, text: 'PM2.5 Change (×10⁶)', color: tickColor },
+               ticks: { color: tickColor } }
+        }
+      }
+    });
   </script>
 </body>
 </html>
