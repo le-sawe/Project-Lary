@@ -1,35 +1,36 @@
-/**
- * NO2 tab coordinator — lazy-initialises each section on first visibility.
- */
-import { initSection1 } from './s1-compare.js';
-import { initSection2 } from './s2-zonal.js';
-import { initSection3 } from './s3-population.js';
-import { initSection4 } from './s4-bivariate.js';
+import { initCompareSection }    from '../sections/compare.js';
+import { initPopulationSection } from '../sections/population.js';
+import { initBivariateSection }  from '../sections/bivariate.js';
+import { DATA_PATHS }            from '../config.js';
+import { observeSection }        from '../utils.js';
 
-const inited = { s1: false, s2: false, s3: false, s4: false };
+const p = DATA_PATHS.no2;
 
 export function initNo2Tab() {
-  // Section 1 initialises immediately (first visible)
-  lazyInit('s1', initSection1);
+  observeSection('no2-s1', () => initCompareSection({
+    beforeId:           'no2-map-s1-before',
+    afterId:            'no2-map-s1-after',
+    compareContainerId: 'no2-map-s1-compare',
+    changeMapId:        'no2-map-s1-change',
+    legendBeforeId:     'no2-legend-s1-before',
+    legendAfterId:      'no2-legend-s1-after',
+    legendChangeId:     'no2-legend-s1-change',
+    tiff2021:           p.avg2021,
+    tiff2023:           p.avg2023,
+    tiffChange:         p.change,
+    label:              'no2',
+  }));
 
-  // Sections 2-4: init when their container scrolls into view
-  observeSection('section-s2', () => lazyInit('s2', initSection2));
-  observeSection('section-s3', () => lazyInit('s3', initSection3));
-  observeSection('section-s4', () => lazyInit('s4', initSection4));
-}
+  observeSection('no2-s2', () => initPopulationSection({
+    mapId:       'no2-map-s2',
+    pieCanvasId: 'no2-pie-canvas',
+    geojson:     p.population,
+  }));
 
-function lazyInit(key, fn) {
-  if (inited[key]) return;
-  inited[key] = true;
-  fn().catch(err => console.error(`Section ${key} init failed:`, err));
-}
-
-function observeSection(id, callback) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const io = new IntersectionObserver(
-    entries => { if (entries[0].isIntersecting) { callback(); io.disconnect(); } },
-    { threshold: 0.1 }
-  );
-  io.observe(el);
+  observeSection('no2-s3', () => initBivariateSection({
+    mapId:    'no2-map-s3',
+    legendId: 'no2-legend-s3',
+    geojson:  p.bivariate,
+    label:    'NO₂',
+  }));
 }

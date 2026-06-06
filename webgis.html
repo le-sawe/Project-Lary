@@ -19,13 +19,16 @@
   <!-- GeoTIFF.js – client-side TIFF decoder -->
   <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
 
+  <!-- Chart.js – pie chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
   <!-- App styles -->
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="css/webgis.css">
 </head>
 <body class="webgis-page">
 
-  <!-- ── Navbar ─────────────────────────────────────────────────────────────── -->
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
     <div class="container-fluid px-3">
       <a class="navbar-brand fw-bold" href="home.html">Project Lary</a>
@@ -37,112 +40,170 @@
     </div>
   </nav>
 
-  <!-- ── Pollution type tabs ─────────────────────────────────────────────────── -->
+  <!-- Pollution type tabs -->
   <div class="pollution-tabs">
     <button class="tab-btn" data-tab="no2">NO₂</button>
+    <button class="tab-btn" data-tab="pm10">PM10</button>
     <button class="tab-btn" data-tab="pm25">PM2.5</button>
-    <button class="tab-btn" data-tab="ozone">Ozone</button>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════════════
-       NO2 TAB PANE
-  ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════
+       NO2 PANE
+  ═══════════════════════════════════════ -->
   <div class="tab-pane" data-pane="no2">
 
-    <!-- Section 1 – Average NO2 + Change ─────────────────────────────────── -->
-    <div class="section-block" id="section-s1">
+    <div class="section-block" id="no2-s1">
       <h2>Section 1 — Average NO₂ Concentration</h2>
-      <p class="section-desc">
-        Drag the divider to compare average NO₂ levels in 2021 and 2023.
-        The second map shows the net change between the two years.
-      </p>
+      <p class="section-desc">Drag the divider to compare 2021 and 2023. The map below shows the net change.</p>
 
-      <!-- Swipe compare -->
       <div style="margin-bottom:1.25rem">
-        <div id="map-s1-compare">
-          <div id="map-s1-before"></div>
-          <div id="map-s1-after"></div>
+        <div id="no2-map-s1-compare">
+          <div id="no2-map-s1-before"></div>
+          <div id="no2-map-s1-after"></div>
           <div class="map-label" style="left:25%;transform:none">2021</div>
           <div class="map-label" style="left:75%;transform:none">2023</div>
-          <div id="legend-s1-before" class="map-legend" style="left:10px;right:auto"></div>
-          <div id="legend-s1-after"  class="map-legend"></div>
+          <div id="no2-legend-s1-before" class="map-legend" style="left:10px;right:auto"></div>
+          <div id="no2-legend-s1-after"  class="map-legend"></div>
         </div>
       </div>
 
-      <!-- Change map -->
       <div class="map-wrap map-h-md">
-        <div id="map-s1-change" style="height:100%"></div>
+        <div id="no2-map-s1-change" style="height:100%"></div>
         <div class="map-label">NO₂ Change 2021 → 2023</div>
-        <div id="legend-s1-change" class="map-legend"></div>
+        <div id="no2-legend-s1-change" class="map-legend"></div>
       </div>
     </div>
 
-    <!-- Section 2 – Zonal statistics ────────────────────────────────────── -->
-    <div class="section-block" id="section-s2">
-      <h2>Section 2 — Zonal Statistics</h2>
-      <p class="section-desc">
-        NO₂ concentrations aggregated by land-cover zone. Hover over a zone
-        to view the full attribute table.
-      </p>
-      <div class="map-wrap map-h-lg">
-        <div id="map-s2" style="height:100%"></div>
-        <div id="legend-s2" class="map-legend"></div>
-      </div>
-    </div>
-
-    <!-- Section 3 – Population ───────────────────────────────────────────── -->
-    <div class="section-block" id="section-s3">
-      <h2>Section 3 — Population Exposure</h2>
-      <p class="section-desc">
-        Population distribution relative to NO₂ exposure zones.
-      </p>
+    <div class="section-block" id="no2-s2">
+      <h2>Section 2 — Population Exposure</h2>
+      <p class="section-desc">Population distribution relative to NO₂ exposure zones.</p>
       <div class="pop-layout">
         <div class="map-wrap map-h-lg">
-          <div id="map-s3" style="height:100%"></div>
+          <div id="no2-map-s2" style="height:100%"></div>
         </div>
         <div class="pie-wrap">
-          <img id="population-pie" alt="Population distribution pie chart">
+          <canvas id="no2-pie-canvas"></canvas>
           <p>Population share by NO₂ exposure class</p>
         </div>
       </div>
     </div>
 
-    <!-- Section 4 – Bivariate choropleth ────────────────────────────────── -->
-    <div class="section-block" id="section-s4">
-      <h2>Section 4 — Bivariate Analysis</h2>
-      <p class="section-desc">
-        Combined NO₂ pollution and population density classified into a
-        bivariate colour scheme. Hover to inspect class values.
-      </p>
+    <div class="section-block" id="no2-s3">
+      <h2>Section 3 — Bivariate Analysis</h2>
+      <p class="section-desc">Combined NO₂ pollution and population density. Hover to inspect values.</p>
       <div class="map-wrap map-h-lg">
-        <div id="map-s4" style="height:100%"></div>
-        <div id="legend-s4" class="map-legend" style="min-width:160px"></div>
+        <div id="no2-map-s3" style="height:100%"></div>
+        <div id="no2-legend-s3" class="map-legend" style="min-width:160px"></div>
       </div>
     </div>
 
-  </div><!-- /no2 pane -->
+  </div><!-- /no2 -->
 
-  <!-- ══════════════════════════════════════════════════════════════════════════
-       PM2.5 TAB PANE (placeholder)
-  ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════
+       PM10 PANE
+  ═══════════════════════════════════════ -->
+  <div class="tab-pane" data-pane="pm10">
+
+    <div class="section-block" id="pm10-s1">
+      <h2>Section 1 — Average PM10 Concentration</h2>
+      <p class="section-desc">Drag the divider to compare 2021 and 2023. The map below shows the net change.</p>
+
+      <div style="margin-bottom:1.25rem">
+        <div id="pm10-map-s1-compare">
+          <div id="pm10-map-s1-before"></div>
+          <div id="pm10-map-s1-after"></div>
+          <div class="map-label" style="left:25%;transform:none">2021</div>
+          <div class="map-label" style="left:75%;transform:none">2023</div>
+          <div id="pm10-legend-s1-before" class="map-legend" style="left:10px;right:auto"></div>
+          <div id="pm10-legend-s1-after"  class="map-legend"></div>
+        </div>
+      </div>
+
+      <div class="map-wrap map-h-md">
+        <div id="pm10-map-s1-change" style="height:100%"></div>
+        <div class="map-label">PM10 Change 2021 → 2023</div>
+        <div id="pm10-legend-s1-change" class="map-legend"></div>
+      </div>
+    </div>
+
+    <div class="section-block" id="pm10-s2">
+      <h2>Section 2 — Population Exposure</h2>
+      <p class="section-desc">Population distribution relative to PM10 exposure zones.</p>
+      <div class="pop-layout">
+        <div class="map-wrap map-h-lg">
+          <div id="pm10-map-s2" style="height:100%"></div>
+        </div>
+        <div class="pie-wrap">
+          <canvas id="pm10-pie-canvas"></canvas>
+          <p>Population share by PM10 exposure class</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="pm10-s3">
+      <h2>Section 3 — Bivariate Analysis</h2>
+      <p class="section-desc">Combined PM10 pollution and population density. Hover to inspect values.</p>
+      <div class="map-wrap map-h-lg">
+        <div id="pm10-map-s3" style="height:100%"></div>
+        <div id="pm10-legend-s3" class="map-legend" style="min-width:160px"></div>
+      </div>
+    </div>
+
+  </div><!-- /pm10 -->
+
+  <!-- ═══════════════════════════════════════
+       PM2.5 PANE
+  ═══════════════════════════════════════ -->
   <div class="tab-pane" data-pane="pm25">
-    <div class="section-block" style="text-align:center;padding:4rem">
-      <h2>PM2.5 — Coming Soon</h2>
-      <p class="section-desc">Data and visualisations for PM2.5 are being prepared.</p>
-    </div>
-  </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════════════
-       OZONE TAB PANE (placeholder)
-  ══════════════════════════════════════════════════════════════════════════ -->
-  <div class="tab-pane" data-pane="ozone">
-    <div class="section-block" style="text-align:center;padding:4rem">
-      <h2>Ozone — Coming Soon</h2>
-      <p class="section-desc">Data and visualisations for Ozone are being prepared.</p>
-    </div>
-  </div>
+    <div class="section-block" id="pm25-s1">
+      <h2>Section 1 — Average PM2.5 Concentration</h2>
+      <p class="section-desc">Drag the divider to compare 2021 and 2023. The map below shows the net change.</p>
 
-  <!-- ── Scripts ────────────────────────────────────────────────────────────── -->
+      <div style="margin-bottom:1.25rem">
+        <div id="pm25-map-s1-compare">
+          <div id="pm25-map-s1-before"></div>
+          <div id="pm25-map-s1-after"></div>
+          <div class="map-label" style="left:25%;transform:none">2021</div>
+          <div class="map-label" style="left:75%;transform:none">2023</div>
+          <div id="pm25-legend-s1-before" class="map-legend" style="left:10px;right:auto"></div>
+          <div id="pm25-legend-s1-after"  class="map-legend"></div>
+        </div>
+      </div>
+
+      <div class="map-wrap map-h-md">
+        <div id="pm25-map-s1-change" style="height:100%"></div>
+        <div class="map-label">PM2.5 Change 2021 → 2023</div>
+        <div id="pm25-legend-s1-change" class="map-legend"></div>
+      </div>
+    </div>
+
+    <div class="section-block" id="pm25-s2">
+      <h2>Section 2 — Population Exposure</h2>
+      <p class="section-desc">Population distribution relative to PM2.5 exposure zones.</p>
+      <div class="pop-layout">
+        <div class="map-wrap map-h-lg">
+          <div id="pm25-map-s2" style="height:100%"></div>
+        </div>
+        <div class="pie-wrap">
+          <canvas id="pm25-pie-canvas"></canvas>
+          <p>Population share by PM2.5 exposure class</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="pm25-s3">
+      <h2>Section 3 — Bivariate Analysis</h2>
+      <p class="section-desc">Combined PM2.5 pollution and population density. Hover to inspect values.</p>
+      <div class="map-wrap map-h-lg">
+        <div id="pm25-map-s3" style="height:100%"></div>
+        <div id="pm25-legend-s3" class="map-legend" style="min-width:160px"></div>
+      </div>
+    </div>
+
+  </div><!-- /pm25 -->
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>

@@ -84,9 +84,10 @@
 .map-h-md  { height: 420px; }
 .map-h-lg  { height: 520px; }
 
-/* Compare container needs both maps stacked */
-#map-s1-compare { position: relative; height: 480px; border-radius: 8px; overflow: hidden; }
-#map-s1-before, #map-s1-after { position: absolute; inset: 0; }
+/* Compare container needs both maps stacked — matches *-map-s1-compare IDs */
+[id$="-map-s1-compare"] { position: relative; height: 480px; border-radius: 8px; overflow: hidden; }
+[id$="-map-s1-before"],
+[id$="-map-s1-after"]   { position: absolute; inset: 0; }
 
 .maps-row {
   display: grid;
@@ -144,7 +145,7 @@
 }
 @media (max-width: 900px) { .pop-layout { grid-template-columns: 1fr; } }
 
-.pie-wrap img { width: 100%; border-radius: 8px; }
+.pie-wrap canvas { width: 100% !important; height: 320px !important; }
 .pie-wrap p {
   font-size: 0.8rem;
   color: #64748b;
