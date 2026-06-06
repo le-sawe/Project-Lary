@@ -1,0 +1,29 @@
+"Trees, pm10"							
+Indicator	Value	Category		Zone_Type	Zone_mean	Zone_min	Zone_max
+Stability	96.12718346	N/A		3 Loss	"-353,357"	"-494,931"	"-169,167"
+Primary Gain source	61.17565238	Crops		2 Gain	"-451,059"	"-811,368"	"-270,706"
+Secondary Gain Source	33.41490617	Rangeland		1 Stable	"-427,907"	"-814,867"	"-147,222"
+Third Gain Source	3.409909363	Built Area					
+Primary Destination Loss	60.83687598	Crops					
+Secondary Destination Loss	29.78775504	Rangeland					
+Third Destination Loss	6.369402382	Built Area					
+							
+"Built Area , no2"							
+Indicator (Built Area)	Value	Category		fid	ZONE_mean	ZONE_min	ZONE_max
+Stability	96.00109704	N/A		Stable	-2.201886092	-2.578390121	-1.738857746
+Primary source	69.37882221	Crops		Gain	-2.436247026	-5.102466583	-1.229761362
+Secondary source	15.08583812	Rangeland		Loss	-2.435764545	-6.245761871	0.115891747
+Third source	15.08526469	Trees					
+Primary Dest Loss	65.64965602	Crops					
+Second Dest Loss	20.77024823	Trees					
+Third Dest Loss	10.99528817	Rangeland					
+							
+"Crops, pm2p5"							
+indicators (crops)	Value (%)	Category		Type	Mean	Minimum	Maximum
+Stability	97.58%	Baseline		Gain	"-317,000,688"	"-4,357,398"	"-19,167,714"
+Primary source of gain	45.96%	Rangeland		Loss	"-277,210,574"	"-47,781,768"	"-12,022,434"
+Secondary source of gain	36.82%	Trees		Stable	"-263,314,378"	"-60,411,386"	"381,223,512"
+Tertiary source of gain	14.93%	Built area					
+Primary source of loss	46.34%	Trees					
+Secondary source of loss	39.57%	Rangeland					
+Tertiary source of loss	12.57%	Built area					
