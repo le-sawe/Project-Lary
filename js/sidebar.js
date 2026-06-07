@@ -1,49 +1,43 @@
 /**
- * @fileoverview Sidebar UI — group tabs and layer-selection rows.
+ * sidebar.js — builds the layer-picker UI and handles selection.
  *
- * The sidebar lets users switch between pollutant groups (NO₂ / PM10 / PM2.5)
- * and select exactly one layer within the active group.  Each layer with
- * `def.pie === true` also gets a small button that opens the pie-chart panel.
+ * We have two levels of UI here:
+ *   1. Group tabs (NO₂ / PM10 / PM2.5) at the top of the sidebar.
+ *      Clicking a tab swaps out the list below it.
+ *   2. Layer rows inside the active tab — one radio button per layer.
+ *      All radios share the name "active-layer" so the browser enforces
+ *      exactly one selection at a time across all groups, even when you
+ *      switch tabs.
  *
- * Public API:
- *  - {@link buildSidebar} – called once after the map loads.
+ * Layers flagged with pie: true also get a small ◑ button that opens the
+ * pie chart panel independently from activating the layer itself — handy
+ * if you just want a quick look at the distribution without switching the
+ * map view.
  *
- * @module sidebar
+ * Call buildSidebar(map) once after the map finishes loading.
  */
 
-import { LAYERS, GROUPS }                      from './layers.js';
-import { activateLayer, getActiveLayerId }     from './layer-manager.js';
-import { showPiePanel }                        from './pie-panel.js';
-
-// ── Public ────────────────────────────────────────────────────────────────────
+import { LAYERS, GROUPS }                   from './layers.js';
+import { activateLayer, getActiveLayerId }  from './layer-manager.js';
+import { showPiePanel }                     from './pie-panel.js';
 
 /**
- * Builds the full sidebar UI and wires up all event listeners.
+ * Creates the group tabs and the initial layer list, then activates
+ * whichever layer has default: true in layers.js.
  *
- * Steps:
- * 1. Creates one `<button class="group-tab">` per pollutant group and appends
- *    them to `#group-tabs`.  Clicking a tab re-renders the layer list below.
- * 2. Renders the layer list for the first group immediately.
- * 3. Activates the first layer that has `default: true` in its definition so
- *    the map is not blank on startup.
- *
- * @param {mapboxgl.Map} map - The live Mapbox GL map instance passed through to
- *                             layer-manager when a layer is selected.
- * @returns {void}
+ * @param {mapboxgl.Map} map - passed through to layer-manager when a layer is selected
  */
 export function buildSidebar(map) {
   const tabsEl = document.getElementById('group-tabs');
   const listEl = document.getElementById('layer-list');
 
-  // Create one tab button per pollutant group
   GROUPS.forEach((g, i) => {
     const btn = document.createElement('button');
-    btn.className    = 'group-tab' + (i === 0 ? ' active' : '');
-    btn.textContent  = g.label;
+    btn.className     = 'group-tab' + (i === 0 ? ' active' : '');
+    btn.textContent   = g.label;
     btn.dataset.group = g.id;
 
     btn.addEventListener('click', () => {
-      // Deactivate all tabs, then mark this one active
       document.querySelectorAll('.group-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       renderLayerList(map, listEl, g.id);
@@ -52,77 +46,61 @@ export function buildSidebar(map) {
     tabsEl.appendChild(btn);
   });
 
-  // Show the first group's layers immediately
+  // Show the first group right away so the sidebar isn't empty on load.
   renderLayerList(map, listEl, GROUPS[0].id);
 
-  // Activate the default layer so the map is not empty on load
+  // Activate the default layer so the map has something on it immediately.
   const first = LAYERS.find(l => l.default);
   if (first) activateLayer(map, first);
 }
 
-// ── Internal ──────────────────────────────────────────────────────────────────
-
 /**
- * Clears and re-populates the layer list for the given group.
+ * Clears the layer list and re-builds it for the given group.
+ * Called on tab click and once during initial setup.
  *
- * Each layer gets a row containing:
- * - A radio button (all layers share the name `"active-layer"` so only one
- *   can be selected at a time across all groups).
- * - A `<label>` displaying the layer's human-readable name.
- * - Optionally, a small `◑` button that opens the pie-chart panel without
- *   requiring the layer to be activated first (useful for quick comparisons).
+ * We re-check getActiveLayerId() each time so the correct radio stays
+ * checked after the user switches tabs and comes back.
  *
- * Selecting a radio button:
- * 1. Calls {@link activateLayer} which loads the data if needed and shows it.
- * 2. If the layer has `pie: true`, automatically opens the pie-chart panel.
- *
- * @param {mapboxgl.Map} map        - Passed through to activateLayer.
- * @param {HTMLElement}  container  - The `#layer-list` element to populate.
- * @param {string}       groupId    - The pollutant group whose layers to show.
- * @returns {void}
+ * @param {mapboxgl.Map} map       - passed through to activateLayer
+ * @param {HTMLElement}  container - the #layer-list element
+ * @param {string}       groupId   - 'no2', 'pm10', or 'pm25'
  */
 function renderLayerList(map, container, groupId) {
   container.innerHTML = '';
-  const groupLayers = LAYERS.filter(l => l.group === groupId);
 
-  groupLayers.forEach(def => {
-    // ── Row wrapper ──────────────────────────────────────────────────────────
+  LAYERS.filter(l => l.group === groupId).forEach(def => {
     const row = document.createElement('div');
     row.className = 'layer-row';
 
-    // ── Radio button ─────────────────────────────────────────────────────────
+    // Radio — all share the same name so only one can be selected globally.
     const radio = document.createElement('input');
     radio.type      = 'radio';
-    radio.name      = 'active-layer'; // single global radio group — one layer at a time
+    radio.name      = 'active-layer';
     radio.id        = 'radio-' + def.id;
     radio.className = 'layer-radio';
-    // Preserve the selected state when the user switches tabs and comes back
     radio.checked   = getActiveLayerId() === def.id;
 
-    // ── Label ────────────────────────────────────────────────────────────────
     const lbl = document.createElement('label');
-    lbl.htmlFor    = radio.id;
-    lbl.className  = 'layer-label';
+    lbl.htmlFor     = radio.id;
+    lbl.className   = 'layer-label';
     lbl.textContent = def.label;
 
-    // ── Radio change handler ─────────────────────────────────────────────────
     radio.addEventListener('change', async () => {
       if (!radio.checked) return;
       await activateLayer(map, def);
-      // Automatically show the pie chart for population-exposure layers
+      // Population-exposure layers auto-open the pie chart on selection.
       if (def.pie) showPiePanel(def);
     });
 
     row.appendChild(radio);
     row.appendChild(lbl);
 
-    // ── Optional pie-chart button ────────────────────────────────────────────
+    // Pie-chart shortcut button — only shown for population layers.
     if (def.pie) {
       const btn = document.createElement('button');
       btn.className   = 'pie-btn';
       btn.title       = 'Show pie chart';
       btn.textContent = '◑';
-      // Allow opening the chart independently from activating the layer
       btn.addEventListener('click', () => showPiePanel(def));
       row.appendChild(btn);
     }

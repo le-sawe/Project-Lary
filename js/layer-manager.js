@@ -1,82 +1,68 @@
 /**
- * @fileoverview Layer lifecycle management.
+ * layer-manager.js — owns the lifecycle of every map layer.
  *
- * This module owns the state machine for map layers:
- * - Tracks which layers have been loaded and which is currently visible.
- * - Loads layer data on first use and caches the result so switching back to a
- *   previously visited layer is instant.
- * - Delegates to `tiff-loader.js` for GeoTIFF rasters and adds GeoJSON sources
- *   directly via the Mapbox GL API for vector layers.
- * - Calls `legend.js` after each activation so the legend always matches the
- *   visible layer.
+ * This module is the bridge between the sidebar UI and the actual Mapbox
+ * sources/layers.  Its main jobs are:
  *
- * Layer types and their Mapbox representations:
+ *   1. Keep track of which layers are loaded, loading, and active.
+ *      Only one layer is visible at a time across all groups.
  *
- * | Type                   | Mapbox source | Mapbox layers added          |
- * |------------------------|---------------|------------------------------|
- * | `tiff`                 | `image`       | `<id>` (raster)              |
- * | `geojson-choropleth`   | `geojson`     | `<id>-fill`, `<id>-line`     |
- * | `geojson-bivariate`    | `geojson`     | `<id>-fill`, `<id>-line`     |
+ *   2. Load layer data on first use, then cache it so switching back to a
+ *      previously visited layer is instant (no re-fetch, no re-render).
  *
- * Public API:
- *  - {@link initLayerManager} – reserved for future setup.
- *  - {@link activateLayer}    – make a layer visible (loads it first if needed).
- *  - {@link getActiveLayerId} – returns the id of the currently visible layer.
+ *   3. Dispatch to the right loader depending on layer type:
+ *        tiff               → tiff-loader.js (canvas → Mapbox image source)
+ *        geojson-choropleth → fetch + addChoropleth()
+ *        geojson-bivariate  → fetch + addBivariate()
  *
- * @module layer-manager
+ *   4. Call legend.js after every activation so the legend always matches
+ *      what's on the map.
+ *
+ * Mapbox layers added per type:
+ *   tiff               → one raster layer: <id>
+ *   geojson-choropleth → two layers: <id>-fill, <id>-line
+ *   geojson-bivariate  → two layers: <id>-fill, <id>-line
+ *
+ * Call activateLayer(map, def) from the sidebar whenever the user selects a
+ * different layer.
  */
 
-import { addTiffLayer }                from './tiff-loader.js';
-import { renderLegend, hideLegend }    from './legend.js';
+import { addTiffLayer }             from './tiff-loader.js';
+import { renderLegend, hideLegend } from './legend.js';
 
-/** @type {Set<string>} Layer ids that have been fully loaded into the map. */
-const loaded  = new Set();
+// Layers that have been fully added to the map (source + layers created).
+const loaded = new Set();
 
-/** @type {Set<string>} Layer ids currently being loaded (prevents duplicate fetches). */
+// Layers currently being fetched/decoded — prevents duplicate requests if
+// the user clicks the same layer twice before it finishes loading.
 const loading = new Set();
 
-/**
- * Cache of loader-computed metadata keyed by layer id.
- * Stored so `renderLegend` can be called again without re-loading the data.
- *
- * @type {Object.<string, { min?: number, max?: number, prop?: string, swatches?: Array }>}
- */
+// Loader-computed metadata keyed by layer id, e.g. { min, max, prop } for
+// rasters or { swatches } for bivariate layers.  Cached so we can re-render
+// the legend without re-loading data when the user switches tabs and back.
 const metaCache = {};
 
-/**
- * Id of the layer that is currently visible.
- * Only one layer can be active at a time across all groups.
- *
- * @type {string|null}
- */
+// The layer id that is currently set to visible.  Null before first activation.
 let activeLayerId = null;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 
-/**
- * No-op placeholder.  Reserved for any future imperative setup that may be
- * needed before the first `activateLayer` call.
- *
- * @returns {void}
- */
+/** Reserved for any future setup that needs to happen before first use. */
 export function initLayerManager() {}
 
 /**
- * Makes `def` the active (visible) layer.
+ * Makes def the active (visible) layer.
  *
- * Sequence of operations:
- * 1. If a different layer is currently active, hide it.
- * 2. If `def` has never been loaded, fetch its data and build Mapbox sources/layers.
- *    Concurrent calls for the same id are de-duped via the `loading` set.
- * 3. Set the new layer visible.
- * 4. Re-render the legend using the cached or freshly computed metadata.
+ *   1. Hides the previously active layer (if any).
+ *   2. Loads the data if this layer hasn't been seen before.
+ *   3. Sets the layer visible.
+ *   4. Re-renders the legend.
  *
- * @param {mapboxgl.Map}              map - The live Mapbox GL map instance.
- * @param {import('./layers.js').LayerDef} def - The layer definition to activate.
- * @returns {Promise<void>}
+ * @param {mapboxgl.Map} map - the live map instance
+ * @param {object}       def - layer definition from layers.js
  */
 export async function activateLayer(map, def) {
-  // Hide the previously active layer before showing the new one
+  // Hide the old layer before showing the new one.
   if (activeLayerId && activeLayerId !== def.id) {
     const { LAYERS } = await import('./layers.js');
     const prev = LAYERS.find(l => l.id === activeLayerId);
@@ -84,7 +70,9 @@ export async function activateLayer(map, def) {
   }
   activeLayerId = def.id;
 
-  // Load data on first use; skip if already loaded or currently loading
+  // First visit: load and register the layer.  The loading set prevents a
+  // second fetch if the user clicks the same layer again while it's still
+  // being decoded (e.g. a large TIFF).
   if (!loaded.has(def.id) && !loading.has(def.id)) {
     loading.add(def.id);
     const meta = await loadLayer(map, def);
@@ -98,38 +86,20 @@ export async function activateLayer(map, def) {
 }
 
 /**
- * Returns the id of the currently active (visible) layer, or `null` if no
- * layer has been activated yet.
- *
- * Used by `sidebar.js` to restore the correct radio-button state when the user
- * switches pollutant tabs.
- *
- * @returns {string|null}
+ * Returns the id of the currently visible layer.
+ * Used by sidebar.js to restore the correct radio-button state when the
+ * user switches pollutant tabs.
  */
 export function getActiveLayerId() { return activeLayerId; }
 
-// ── Visibility helpers ────────────────────────────────────────────────────────
+// ── Visibility ────────────────────────────────────────────────────────────────
 
-/**
- * Sets all Mapbox layers associated with `def` to `visibility: visible`.
- *
- * @param {mapboxgl.Map}              map
- * @param {import('./layers.js').LayerDef} def
- * @returns {void}
- */
 function showLayer(map, def) {
   layerIds(def).forEach(id => {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'visible');
   });
 }
 
-/**
- * Sets all Mapbox layers associated with `def` to `visibility: none`.
- *
- * @param {mapboxgl.Map}              map
- * @param {import('./layers.js').LayerDef} def
- * @returns {void}
- */
 function hideLayer(map, def) {
   layerIds(def).forEach(id => {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
@@ -137,14 +107,8 @@ function hideLayer(map, def) {
 }
 
 /**
- * Returns the list of Mapbox layer ids that represent `def` on the map.
- *
- * TIFF layers use a single raster layer with the same id as the definition.
- * GeoJSON layers (choropleth and bivariate) use a fill layer and a line layer
- * (the line layer draws the polygon borders).
- *
- * @param {import('./layers.js').LayerDef} def
- * @returns {string[]}
+ * Returns all Mapbox layer ids that belong to def.
+ * TIFFs use a single raster layer; GeoJSON types use a fill + a line layer.
  */
 function layerIds(def) {
   return def.type === 'tiff'
@@ -155,21 +119,14 @@ function layerIds(def) {
 // ── Loaders ───────────────────────────────────────────────────────────────────
 
 /**
- * Dispatches to the appropriate loader based on `def.type` and returns the
- * legend metadata produced by that loader.
- *
- * @param {mapboxgl.Map}              map
- * @param {import('./layers.js').LayerDef} def
- * @returns {Promise<{ min?: number, max?: number, prop?: string, swatches?: Array }>}
+ * Dispatches to the right loader for def.type and returns legend metadata.
  */
 async function loadLayer(map, def) {
   if (def.type === 'tiff') {
-    // GeoTIFF: decoded to a canvas image source by tiff-loader
     const { min, max } = await addTiffLayer(map, def.id, def.src);
     return { min, max };
   }
 
-  // GeoJSON: fetch once and add as a vector source
   const res  = await fetch(def.src);
   const data = await res.json();
   map.addSource(def.id, { type: 'geojson', data });
@@ -180,36 +137,29 @@ async function loadLayer(map, def) {
 }
 
 /**
- * Adds a choropleth fill + outline layer for a GeoJSON source.
+ * Adds a choropleth fill + border for a GeoJSON source.
  *
- * The fill colour is a Mapbox `interpolate` expression that maps the first
- * numeric property found in the feature properties linearly from `#0d47a1`
- * (dark blue, low value) to `#e3f2fd` (light blue, high value).  If no numeric
- * property is found, a flat `#38bdf8` fill is used as a fallback.
+ * We auto-detect the first numeric property in the features and use a
+ * Mapbox interpolate expression to shade it from dark blue (low) to light
+ * blue (high).  These two color stops must match CHORO_GRADIENT in legend.js
+ * and CHORO_LO / CHORO_HI in pie-panel.js — all three need to agree on what
+ * the colors mean.
  *
- * The gradient endpoints MUST match `CHORO_GRADIENT` in `legend.js` and
- * `CHORO_LO / CHORO_HI` in `pie-panel.js` so all three components agree on
- * what the colours mean.
+ * If no numeric property is found we fall back to a flat sky-blue fill.
  *
- * @param {mapboxgl.Map}              map
- * @param {import('./layers.js').LayerDef} def
- * @param {GeoJSON.FeatureCollection} data - Pre-fetched GeoJSON data.
- * @returns {{ min: number|null, max: number|null, prop: string|undefined }}
- *   Metadata forwarded to the legend renderer.
+ * @returns {{ min, max, prop }} forwarded to the legend
  */
 function addChoropleth(map, def, data) {
   const firstProps  = data.features[0]?.properties ?? {};
-  // Auto-detect the first numeric property to drive the colour ramp
   const numericProp = Object.keys(firstProps).find(k => typeof firstProps[k] === 'number');
 
-  let fillColor = '#38bdf8'; // fallback flat colour (sky blue)
+  let fillColor = '#38bdf8'; // fallback flat color
   let lo = null, hi = null;
 
   if (numericProp) {
     const vals = data.features.map(f => f.properties[numericProp]).filter(isFinite);
     lo = Math.min(...vals);
     hi = Math.max(...vals);
-    // Mapbox expression: linear interpolation between dark-blue (low) and light-blue (high)
     fillColor = ['interpolate', ['linear'], ['get', numericProp], lo, '#0d47a1', hi, '#e3f2fd'];
   }
 
@@ -222,36 +172,28 @@ function addChoropleth(map, def, data) {
     paint: { 'line-color': '#fff', 'line-width': 0.5, 'line-opacity': 0.3 },
   });
 
-  // Attach hover popup for feature property inspection
   addHoverPopup(map, def.id + '-fill');
-
   return { min: lo, max: hi, prop: numericProp };
 }
 
 /**
- * Adds a bivariate fill + outline layer for a GeoJSON source.
+ * Adds a bivariate fill + border for a GeoJSON source.
  *
- * Bivariate GeoJSONs carry a pre-computed fill colour per feature in one of
- * the recognised property names: `fill`, `color`, `hex`, or `bivariate_color`.
- * If none of these is found, a flat indigo is used as a fallback.
+ * Bivariate GeoJSONs have a pre-computed fill color per feature stored in
+ * one of these property names: 'fill', 'color', 'hex', 'bivariate_color'.
+ * If none of those exist we fall back to flat indigo.
  *
- * Also collects up to 12 unique `{color, label}` pairs for the legend swatches
- * by scanning all features (capped at 12 to keep the legend compact).
+ * We also scan all features to collect unique color→label pairs for the
+ * legend swatches (capped at 12 so the legend doesn't overflow).
  *
- * @param {mapboxgl.Map}              map
- * @param {import('./layers.js').LayerDef} def
- * @param {GeoJSON.FeatureCollection} data - Pre-fetched GeoJSON data.
- * @returns {{ swatches: { color: string, label: string }[] }}
- *   Metadata forwarded to the legend renderer.
+ * @returns {{ swatches }} forwarded to the legend
  */
 function addBivariate(map, def, data) {
   const firstProps = data.features[0]?.properties ?? {};
-  // Find which property holds the pre-computed fill colour
-  const fillProp = ['fill', 'color', 'hex', 'bivariate_color'].find(k => k in firstProps);
+  const fillProp   = ['fill', 'color', 'hex', 'bivariate_color'].find(k => k in firstProps);
 
   map.addLayer({
     id: def.id + '-fill', type: 'fill', source: def.id,
-    // Use the per-feature colour from the GeoJSON, or fall back to flat indigo
     paint: { 'fill-color': fillProp ? ['get', fillProp] : '#818cf8', 'fill-opacity': 0.85 },
   });
   map.addLayer({
@@ -261,14 +203,13 @@ function addBivariate(map, def, data) {
 
   addHoverPopup(map, def.id + '-fill');
 
-  // Collect unique colour → label mappings for the legend swatches
+  // Build the swatch list for the legend.
   const seen      = new Map();
   const labelProp = Object.keys(firstProps).find(k => typeof firstProps[k] === 'string' && k !== fillProp);
   data.features.forEach(f => {
     const color = f.properties[fillProp];
     if (!color || seen.has(color)) return;
-    const label = labelProp ? f.properties[labelProp] : color;
-    seen.set(color, label);
+    seen.set(color, labelProp ? f.properties[labelProp] : color);
   });
   const swatches = [...seen.entries()].slice(0, 12).map(([color, label]) => ({ color, label }));
 
@@ -278,34 +219,29 @@ function addBivariate(map, def, data) {
 // ── Hover popup ───────────────────────────────────────────────────────────────
 
 /**
- * Attaches `mousemove` and `mouseleave` listeners to `layerId` so hovering
- * over a polygon shows a floating table of all its properties.
+ * Attaches a floating property table to layerId that appears on hover.
  *
- * The popup is destroyed on `mouseleave` so it does not linger when the cursor
- * leaves the layer.
+ * We show every non-null property from the hovered feature in a small table.
+ * Numbers are shown with 3 decimal places; strings are shown as-is.
+ * The popup is removed on mouseleave so it doesn't stick around.
  *
- * @param {mapboxgl.Map} map     - The live map instance.
- * @param {string}       layerId - The fill layer id to listen on.
- * @returns {void}
+ * @param {mapboxgl.Map} map
+ * @param {string}       layerId - the fill layer to listen on
  */
 function addHoverPopup(map, layerId) {
   const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
 
   map.on('mousemove', layerId, e => {
     map.getCanvas().style.cursor = 'pointer';
-
-    // Build an HTML table row for each non-null property
     const rows = Object.entries(e.features[0].properties)
       .filter(([, v]) => v !== null)
       .map(([k, v]) =>
         `<tr><td>${k}</td><td><b>${typeof v === 'number' ? v.toFixed(3) : v}</b></td></tr>`
       )
       .join('');
-
-    popup
-      .setLngLat(e.lngLat)
-      .setHTML(`<table class="map-tooltip-table">${rows}</table>`)
-      .addTo(map);
+    popup.setLngLat(e.lngLat)
+         .setHTML(`<table class="map-tooltip-table">${rows}</table>`)
+         .addTo(map);
   });
 
   map.on('mouseleave', layerId, () => {

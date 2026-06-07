@@ -1,61 +1,46 @@
 /**
- * @fileoverview GeoTIFF loading and rendering utilities.
+ * tiff-loader.js — reads GeoTIFFs and paints them onto the map.
  *
- * Uses the `geotiff.js` library (loaded globally as `window.GeoTIFF`) to read
- * raster files, convert pixel values to RGBA colours via a custom colour ramp,
- * and register the result as a Mapbox `image` source so it can be displayed as
- * a `raster` layer.
+ * We use the geotiff.js library (loaded globally as window.GeoTIFF) to
+ * decode the raster, then we draw it onto an off-screen canvas and hand
+ * that canvas to Mapbox as an image source.
  *
- * Supported raster types:
- * - **Single-band** (most pollution GeoTIFFs): pixel values are normalised to
- *   [0, 1] and passed through {@link colormap} to produce RGBA.  NODATA pixels
- *   are made fully transparent.
- * - **Multi-band (RGB / RGBA)**: bands are read directly as display colours
- *   with no remapping.
+ * Two raster types are handled:
  *
- * Public API:
- *  - {@link loadTiffAsCanvas} – decode a GeoTIFF URL into an HTML canvas.
- *  - {@link addTiffLayer}     – load a GeoTIFF and add/update it on the map.
+ *   Single-band  (all our pollution TIFFs are single-band)
+ *   — pixel values are raw concentration numbers (e.g. µg/m³)
+ *   — we scan all valid pixels to find min/max, normalise to [0,1],
+ *     then run each pixel through our color ramp (dark blue → gold → red)
+ *   — NODATA pixels go fully transparent so the basemap shows through
+ *   — we return min/max to the caller so the legend can label the scale
  *
- * @module tiff-loader
+ *   Multi-band RGB/RGBA  (not used yet but supported just in case)
+ *   — bands are copied directly to canvas channels, no remapping
+ *
+ * The color ramp here MUST stay in sync with TIFF_GRADIENT in legend.js.
+ * If you change one, change both or the legend will show wrong colors.
  */
 
-// ── Public ────────────────────────────────────────────────────────────────────
-
 /**
- * Fetches a GeoTIFF from `url`, renders it onto an off-screen `<canvas>`, and
- * returns the canvas together with the bounding box and value range.
+ * Fetches a GeoTIFF from url, renders it to an off-screen canvas, and
+ * returns that canvas plus the geographic bounding box and value range.
  *
- * The function handles two raster variants automatically:
+ * You probably don't need to call this directly — use addTiffLayer instead.
  *
- * **Single-band (e.g. pollution concentration μg/m³):**
- * 1. Scan all valid pixels to find `min` and `max`.
- * 2. Normalise each pixel to `t ∈ [0, 1]`.
- * 3. Map `t` through {@link colormap} (dark-blue → gold → crimson).
- * 4. Set alpha to 200 (slightly transparent) so the basemap shows through.
- * 5. NODATA pixels receive alpha = 0 (fully transparent).
- *
- * **Multi-band (RGB or RGBA):**
- * Copy band values directly to canvas RGBA channels.  Alpha defaults to 255
- * for RGB files and uses the fourth band for RGBA files.
- *
- * @param {string} url - URL or relative path to the GeoTIFF file.
+ * @param {string} url - path or URL to the .tif file
  * @returns {Promise<{ canvas: HTMLCanvasElement, bbox: number[], min: number|null, max: number|null }>}
- *   - `canvas` – off-screen canvas with the raster painted on it.
- *   - `bbox`   – geographic bounding box `[west, south, east, north]` in EPSG:4326.
- *   - `min`    – minimum valid pixel value (null for multi-band files).
- *   - `max`    – maximum valid pixel value (null for multi-band files).
+ *   bbox is [west, south, east, north] in WGS-84 degrees
  */
 export async function loadTiffAsCanvas(url) {
   const GeoTIFF = window.GeoTIFF;
   const tiff    = await GeoTIFF.fromUrl(url);
   const image   = await tiff.getImage();
 
-  const bbox            = image.getBoundingBox(); // [W, S, E, N] in the file's CRS (assumed 4326)
+  const bbox            = image.getBoundingBox(); // [W, S, E, N]
   const width           = image.getWidth();
   const height          = image.getHeight();
   const samplesPerPixel = image.getSamplesPerPixel();
-  // interleave:true → single typed array ordered R₀G₀B₀R₁G₁B₁… instead of band planes
+  // interleave: true gives us R₀G₀B₀R₁G₁B₁… instead of separate band arrays.
   const samples         = await image.readRasters({ interleave: true });
 
   const canvas  = document.createElement('canvas');
@@ -67,23 +52,22 @@ export async function loadTiffAsCanvas(url) {
   let min = null, max = null;
 
   if (samplesPerPixel >= 3) {
-    // ── Multi-band: copy bands directly to RGBA ──────────────────────────────
+    // Multi-band: copy R, G, B (and optional A) straight to the canvas.
     for (let i = 0; i < width * height; i++) {
-      imgData.data[i * 4]     = samples[i * samplesPerPixel];       // R
-      imgData.data[i * 4 + 1] = samples[i * samplesPerPixel + 1];   // G
-      imgData.data[i * 4 + 2] = samples[i * samplesPerPixel + 2];   // B
-      // Use the alpha band if present; otherwise fully opaque
+      imgData.data[i * 4]     = samples[i * samplesPerPixel];
+      imgData.data[i * 4 + 1] = samples[i * samplesPerPixel + 1];
+      imgData.data[i * 4 + 2] = samples[i * samplesPerPixel + 2];
       imgData.data[i * 4 + 3] = samplesPerPixel === 4 ? samples[i * 4 + 3] : 255;
     }
   } else {
-    // ── Single-band: normalise then apply colour ramp ────────────────────────
+    // Single-band: find value range, then map each pixel through the color ramp.
 
-    // Read the NODATA value from GDAL metadata (may be absent)
+    // GDAL stores the no-data sentinel in the file's metadata.
     const nodata = image.fileDirectory.GDAL_NODATA
       ? parseFloat(image.fileDirectory.GDAL_NODATA)
       : null;
 
-    // First pass: find the range of valid (non-nodata, finite) pixel values
+    // First pass — find min/max ignoring nodata and non-finite values.
     min = Infinity; max = -Infinity;
     for (let i = 0; i < samples.length; i++) {
       const v = samples[i];
@@ -92,13 +76,13 @@ export async function loadTiffAsCanvas(url) {
       if (v < min) min = v;
       if (v > max) max = v;
     }
-    const range = max - min || 1; // guard against flat rasters (all pixels same value)
+    const range = max - min || 1; // avoid divide-by-zero on flat rasters
 
-    // Second pass: colour each pixel
+    // Second pass — color each pixel.
     for (let i = 0; i < width * height; i++) {
       const v = samples[i];
 
-      // Make NODATA pixels fully transparent so the basemap shows underneath
+      // Transparent for nodata so the basemap shows through.
       if (nodata !== null && v === nodata) {
         imgData.data[i * 4 + 3] = 0;
         continue;
@@ -109,7 +93,7 @@ export async function loadTiffAsCanvas(url) {
       imgData.data[i * 4]     = r;
       imgData.data[i * 4 + 1] = g;
       imgData.data[i * 4 + 2] = b;
-      imgData.data[i * 4 + 3] = 200; // slight transparency to preserve basemap context
+      imgData.data[i * 4 + 3] = 200; // slightly transparent so basemap context remains
     }
   }
 
@@ -118,27 +102,23 @@ export async function loadTiffAsCanvas(url) {
 }
 
 /**
- * Loads a GeoTIFF and registers (or updates) it as a Mapbox image source, then
- * adds a `raster` layer if one does not already exist.
+ * Loads a GeoTIFF and registers it on the map as an image source + raster layer.
  *
- * Calling this function a second time with the same `id` updates the image in
- * place via `source.updateImage()` rather than adding a duplicate layer.
+ * If the same id was loaded before (e.g. the user switched tabs and came back)
+ * we update the image in place instead of adding a duplicate source.
  *
- * @param {mapboxgl.Map} map     - The live Mapbox GL map to add the layer to.
- * @param {string}       id      - Unique id used for both the source and the layer.
- * @param {string}       url     - URL / path to the GeoTIFF file.
- * @param {number}      [opacity=0.85] - Raster opacity (0 = transparent, 1 = opaque).
+ * @param {mapboxgl.Map} map     - the live map to add the layer to
+ * @param {string}       id      - used as both the Mapbox source id and layer id
+ * @param {string}       url     - path or URL to the .tif file
+ * @param {number}      [opacity=0.85] - how opaque the raster should be
  * @returns {Promise<{ min: number|null, max: number|null }>}
- *   The pixel value range of the raster, forwarded to {@link renderLegend} via
- *   the layer-manager.
+ *   returned to layer-manager so it can pass min/max to the legend
  */
 export async function addTiffLayer(map, id, url, opacity = 0.85) {
   const { canvas, bbox, min, max } = await loadTiffAsCanvas(url);
-  // Convert canvas to a data-URL so Mapbox can use it as a static image source
   const dataUrl = canvas.toDataURL('image/png');
 
-  // Mapbox image sources use corner coordinates in [lng, lat] order:
-  // top-left, top-right, bottom-right, bottom-left
+  // Mapbox image source corners: NW, NE, SE, SW in [lng, lat] order.
   const coordinates = [
     [bbox[0], bbox[3]], // NW
     [bbox[2], bbox[3]], // NE
@@ -147,7 +127,7 @@ export async function addTiffLayer(map, id, url, opacity = 0.85) {
   ];
 
   if (map.getSource(id)) {
-    // Already loaded on a previous visit — just swap the pixel data
+    // Already on the map from a previous visit — just swap the pixel data.
     map.getSource(id).updateImage({ url: dataUrl, coordinates });
   } else {
     map.addSource(id, { type: 'image', url: dataUrl, coordinates });
@@ -157,25 +137,21 @@ export async function addTiffLayer(map, id, url, opacity = 0.85) {
   return { min, max };
 }
 
-// ── Internal ──────────────────────────────────────────────────────────────────
-
 /**
- * Maps a normalised value `t ∈ [0, 1]` to an RGB colour using a two-segment
- * linear gradient:
+ * Maps a normalised pixel value t ∈ [0,1] to an RGB color.
  *
- * - `t = 0.0` → `#1e3a5f` (dark blue   — low pollution)
- * - `t = 0.5` → `#f0c040` (gold        — medium pollution)
- * - `t = 1.0` → `#c0392b` (crimson red — high pollution)
+ * Two-segment linear gradient:
+ *   t = 0.0  →  #1e3a5f  (dark blue  — low pollution)
+ *   t = 0.5  →  #f0c040  (gold       — medium)
+ *   t = 1.0  →  #c0392b  (dark red   — high pollution)
  *
- * This ramp mirrors the TIFF legend gradient in `legend.js` so the map colours
- * and the legend are always in sync.
+ * These three stops must match the TIFF_GRADIENT constant in legend.js.
  *
- * @param {number} t - Normalised pixel value clamped to [0, 1].
- * @returns {[number, number, number]} RGB channel values in the range [0, 255].
+ * @param {number} t - normalized value, already clamped to [0, 1]
+ * @returns {[number, number, number]} [R, G, B] each 0–255
  */
 function colormap(t) {
   if (t < 0.5) {
-    // First segment: dark blue → gold
     const s = t * 2; // remap [0, 0.5] → [0, 1]
     return [
       Math.round(30  + s * (240 - 30)),  // R: 30  → 240
@@ -183,7 +159,6 @@ function colormap(t) {
       Math.round(95  + s * (64  - 95)),  // B: 95  → 64
     ];
   }
-  // Second segment: gold → crimson
   const s = (t - 0.5) * 2; // remap [0.5, 1] → [0, 1]
   return [
     Math.round(240 + s * (192 - 240)), // R: 240 → 192

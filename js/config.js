@@ -1,65 +1,41 @@
 /**
- * @fileoverview Central configuration for the WebGIS application.
+ * config.js — all the stuff that changes between environments.
  *
- * All environment-sensitive values (API token, map defaults, file paths) live
- * here so the rest of the codebase never hard-codes them.  
+ * We keep the Mapbox token, map defaults, and file paths here so nothing
+ * else in the codebase ever hard-codes them.  If you need to swap a data
+ * file or change the starting view, this is the only file you touch.
  *
- * @module config
+ * The token lives in env.js (git-ignored) so we never accidentally commit
+ * it.  In the Mapbox dashboard we also restrict it to our GitHub Pages
+ * domain so if it leaks it's useless anywhere else.
  */
 
-/**
- * Mapbox GL JS public access token.
- * Sourced from `env.js` which is excluded from version control.
- * Restricting this token to your GitHub Pages origin in the Mapbox dashboard
- * prevents unauthorised map tile usage.
- *
- * @type {string}
- */
+/** Mapbox public token — pulled from env.js, never committed. */
 export { MAPBOX_TOKEN } from '../env.js';
 
-/**
- * Default map centre coordinates for Hungary.
- * Format: [longitude, latitude] as required by Mapbox GL JS.
- *
- * @type {[number, number]}
- */
+/** [lng, lat] center of Hungary — where the map opens on load. */
 export const HUNGARY_CENTER = [19.5033, 47.1624];
 
-/**
- * Default zoom level that shows the whole of Hungary at startup.
- * Zoom 6–7 gives a good overview of country-level data.
- *
- * @type {number}
- */
+/** Zoom 6.4 shows the whole country with a little breathing room. */
 export const HUNGARY_ZOOM = 6.4;
 
-/**
- * Mapbox style URL for the initial dark basemap.
- * Users can switch basemaps at runtime via the switcher buttons in main.js.
- *
- * @type {string}
- */
+/** Dark basemap as default — the pollution color ramps read better on dark. */
 export const BASE_STYLE = 'mapbox://styles/mapbox/dark-v11';
 
 /**
- * Paths to every data file used by the application, grouped by pollutant.
- * All paths are relative to the repository root so they work on both
- * localhost and GitHub Pages without any path rewriting.
+ * Paths to every data file, grouped by pollutant.
  *
- * Each pollutant has five datasets:
- * - `avg2021`    – GeoTIFF: annual average concentration for 2021
- * - `avg2023`    – GeoTIFF: annual average concentration for 2023
- * - `change`     – GeoTIFF: pixel-level difference (2023 − 2021)
- * - `population` – GeoJSON: sub-national polygons with population-weighted
- *                  exposure statistics (drives choropleth + pie chart)
- * - `bivariate`  – GeoJSON: polygons pre-coloured for the bivariate map
- *                  (pollution level × population density)
+ * Each pollutant has 5 datasets:
+ *   avg2021    — GeoTIFF, annual average concentration 2021
+ *   avg2023    — GeoTIFF, annual average concentration 2023
+ *   change     — GeoTIFF, pixel-wise difference (2023 minus 2021, can be negative)
+ *   population — GeoJSON, sub-national polygons with population-weighted
+ *                exposure stats; this is what drives the choropleth + pie chart
+ *   bivariate  — GeoJSON, polygons pre-colored for the two-variable map
+ *                (pollution level × population density combined into one color)
  *
- * @type {{
- *   no2:  { avg2021: string, avg2023: string, change: string, population: string, bivariate: string },
- *   pm10: { avg2021: string, avg2023: string, change: string, population: string, bivariate: string },
- *   pm25: { avg2021: string, avg2023: string, change: string, population: string, bivariate: string },
- * }}
+ * Paths are relative to the repo root so they work on localhost and
+ * GitHub Pages without any rewriting.
  */
 export const DATA_PATHS = {
   no2: {
