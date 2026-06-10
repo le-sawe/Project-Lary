@@ -7,6 +7,20 @@ body.webgis-page { overflow: hidden; }
   left: 0; right: 0; bottom: 0;
 }
 
+/* ── Cursor coordinates control ─────────────────────────────────────────────── */
+.cursor-coords-ctrl {
+  padding: 0 8px;
+  min-width: 180px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Sidebar ────────────────────────────────────────────────────────────────── */
 #sidebar {
   position: fixed;

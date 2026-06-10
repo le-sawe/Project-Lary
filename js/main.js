@@ -18,6 +18,27 @@ import { initPiePanel }  from './pie-panel.js';
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
+class CursorCoordsControl {
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement('div');
+    this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group cursor-coords-ctrl';
+    this._container.textContent = '—';
+    map.on('mousemove', e => {
+      this._container.textContent =
+        `${e.lngLat.lng.toFixed(5)},  ${e.lngLat.lat.toFixed(5)}`;
+    });
+    map.getCanvas().addEventListener('mouseleave', () => {
+      this._container.textContent = '—';
+    });
+    return this._container;
+  }
+  onRemove() {
+    this._container.remove();
+    this._map = undefined;
+  }
+}
+
 /**
  * The one shared map instance.  We pass this into other modules as a
  * function argument rather than exporting it, so each module stays easy
@@ -30,9 +51,10 @@ const map = new mapboxgl.Map({
   zoom:      HUNGARY_ZOOM,
 });
 
-// Zoom/rotate controls top-left, scale bar bottom-left next to the legend.
 map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
+map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
+map.addControl(new mapboxgl.ScaleControl(), 'top-left');
+map.addControl(new CursorCoordsControl(), 'top-left');
 
 // Wait for the base style tiles to finish before we try to add sources/layers.
 map.on('load', () => {

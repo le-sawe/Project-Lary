@@ -112,7 +112,7 @@ function renderPie(geojson) {
   const features = geojson.features;
   if (!features.length) return;
 
-  const labelProp = 'pol_class_max'; // pollution class label per polygon
+  const labelProp = 'pop_sum'; // pollution class label per polygon
   const valueProp = 'pop_sum';       // total population in that class
 
   const labels = features.map((f, i) => f.properties[labelProp] ?? `Zone ${i + 1}`);

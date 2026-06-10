@@ -151,7 +151,7 @@ async function loadLayer(map, def) {
  */
 function addChoropleth(map, def, data) {
   const firstProps  = data.features[0]?.properties ?? {};
-  const numericProp = Object.keys(firstProps).find(k => typeof firstProps[k] === 'number');
+  const numericProp = def.prop ?? Object.keys(firstProps).find(k => typeof firstProps[k] === 'number');
 
   let fillColor = '#38bdf8'; // fallback flat color
   let lo = null, hi = null;
