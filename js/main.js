@@ -7,14 +7,15 @@
  *
  * It also handles the basemap switcher buttons at the bottom of the UI.
  * Worth noting: calling map.setStyle() nukes every source and layer we
- * added at runtime — if we ever want data layers to survive a style swap
- * we'd need to re-add them inside a map.once('style.load', ...) callback.
- * For now that's not a requirement so we leave it as-is.
+ * added at runtime.  We handle this by listening for style.load and calling
+ * reloadAfterStyleSwap(), which evicts the active layer from the loaded cache
+ * and re-adds it on top of the new basemap tiles.
  */
 
 import { MAPBOX_TOKEN, HUNGARY_CENTER, HUNGARY_ZOOM, BASE_STYLE } from './config.js';
-import { buildSidebar }  from './sidebar.js';
-import { initPiePanel }  from './pie-panel.js';
+import { buildSidebar }           from './sidebar.js';
+import { initPiePanel }           from './pie-panel.js';
+import { reloadAfterStyleSwap }   from './layer-manager.js';
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
@@ -88,11 +89,13 @@ const STYLES = {
 };
 
 // Hook up each basemap button: clear the active class from all, set it on the
-// clicked one, then swap the style.
+// clicked one, then swap the style.  After the new style tiles load we
+// re-add the active data layer on top so it isn't lost.
 document.querySelectorAll('[data-style]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('[data-style]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    map.once('style.load', () => reloadAfterStyleSwap(map));
     map.setStyle(STYLES[btn.dataset.style]);
   });
 });

@@ -92,6 +92,25 @@ export async function activateLayer(map, def) {
  */
 export function getActiveLayerId() { return activeLayerId; }
 
+/**
+ * Re-adds the active layer to the map after a basemap style swap.
+ *
+ * map.setStyle() wipes every source and layer we added at runtime.  Call
+ * this inside a map.once('style.load') handler to restore the active layer
+ * on top of the new basemap tiles.
+ *
+ * @param {mapboxgl.Map} map
+ */
+export async function reloadAfterStyleSwap(map) {
+  if (!activeLayerId) return;
+  // Remove from cache so activateLayer re-adds sources + layers to the map.
+  loaded.delete(activeLayerId);
+  loading.delete(activeLayerId);
+  const { LAYERS } = await import('./layers.js');
+  const def = LAYERS.find(l => l.id === activeLayerId);
+  if (def) await activateLayer(map, def);
+}
+
 // ── Visibility ────────────────────────────────────────────────────────────────
 
 function showLayer(map, def) {
